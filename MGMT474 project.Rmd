@@ -87,17 +87,6 @@ plot(k, accuracy, type = 'b')
 plot(k, accuracy2, type= 'b')
 plot(k, accuracy3, type= 'b')
 plot(k, accuracy5, type='b')
-accuracy4
-```
-
-
-
-```{r}
-library(MASS)
-GPSC_Volume1 <- coredata(GSPC$GSPC.Volume)
-lag_1 <- cbind(lag(GSPC_Volume, default =  4304880000))
-lag_2 <- cbind(lag(GSPC_Volume, 2))
-qda.fit=qda(train_lbs~lag_1+lag_2+new_GSPC$GSPC.Volume, subset=GSPC_Volume[1:100])
 ```
 
 
