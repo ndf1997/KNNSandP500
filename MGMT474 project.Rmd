@@ -1,6 +1,6 @@
 ---
 title: "MGMT 474 project"
-author: "Congyu Pu"
+author: "Nicholas Franz"
 date: "2/26/2021"
 output: html_document
 ---
