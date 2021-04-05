@@ -1,0 +1,105 @@
+---
+title: "MGMT 474 project"
+author: "Congyu Pu"
+date: "2/26/2021"
+output: html_document
+---
+```{r}
+# Download S&P500 time series from 2016 to 2021
+library(quantmod)
+library(zoo)
+library(xts)
+library(TTR)
+sp500<-new.env()
+getSymbols("^GSPC",env=sp500,src="yahoo",from=as.Date("2016-01-01"),to=as.Date("2021-01-01"))
+GSPC<-sp500$GSPC
+head(GSPC)#This is on OHLC time series with at least the (daily) Open, Hi, Lo and Close prices for the symbol; here, it also contains the traded volume and the closing price adjusted for splits and dividends.
+```
+```{r}
+dim(GSPC)# 1259 observations on 6 variables
+new_GSPC<-GSPC[,5:6]
+head(new_GSPC)
+which(is.na(new_GSPC))#Identify missing value and there is no missing value
+```
+
+```{r}
+library(xts)
+library(zoo)
+data.frame(new_GSPC)
+new_GSPC$movement<-NA
+for(i in 1:length(new_GSPC$GSPC.Adjusted)){
+  if(i != length(new_GSPC$GSPC.Adjusted)){
+    if(as.numeric(new_GSPC$GSPC.Adjusted[i+1])<as.numeric(new_GSPC$GSPC.Adjusted[i])){
+      new_GSPC$movement[i+1]<-1
+    }else{
+      new_GSPC$movement[i+1]<-0
+    }
+  }
+}
+head(new_GSPC)
+```
+```{r}
+library(magrittr)
+library("tidyverse")
+library(zoo)
+library(xts)
+new_GSPC2<-new_GSPC %>% mutate(lagvol_1 = lag(GSPC$GSPC.Volume),
+                               lagvol_2 = lag(GSPC$GSPC.Volume,2),
+                               lagvol_3 = lag(GSPC$GSPC.Volume,3),
+                               lagvol_4 = lag(GSPC$GSPC.Volume,4),
+                               lagvol_5 = lag(GSPC$GSPC.Volume,5))
+head(new_GSPC2)
+```
+
+```{r}
+set.seed(1)
+library(class)
+library(dplyr)
+library(lubridate)
+GSPC_Volume <- coredata(GSPC$GSPC.Volume)
+new_GSPC2 <- cbind(lag1 = lag(GSPC_Volume, default = 4304880000), lag2 = lag(GSPC_Volume, 2, default = 4304880000), lag3 = lag(GSPC_Volume, 3, default = 4304880000), lag4 = lag(GSPC_Volume, 4, default = 4304880000), lag5 = lag(GSPC_Volume, 5, default = 4304880000), new_GSPC$movement)
+movement <- coredata(new_GSPC2$movement)
+accuracy <- rep(0,10)
+accuracy2 <- rep(0,10)
+accuracy3 <- rep(0,10)
+accuracy5 <- rep(0,10)
+k <- 1:10
+for(x in k){
+  prediction <- knn(new_GSPC2$lag1[2:101],new_GSPC2$lag1[102:1259], new_GSPC2$movement[2:101], k=x) 
+  prediction2 <- knn(new_GSPC2$lag1[2:258],new_GSPC2$lag1[259:1259], new_GSPC2$movement[2:258], k=x) 
+  accuracy[x] <- mean(prediction == movement[102:1259])
+  accuracy2[x] <- mean(prediction2 == movement[259:1259])
+  accuracy[x]
+  accuracy2[x]
+  table(prediction)
+  table(prediction2)
+  prediction3 <- knn(new_GSPC2$lag1[2:101]+new_GSPC2$lag2[2:101]+new_GSPC2$lag3[2:101]+new_GSPC2$lag4[2:101]+new_GSPC2$lag5[2:101], new_GSPC2$lag1[102:1259]+new_GSPC2$lag2[102:1259]+new_GSPC2$lag3[102:1259]+new_GSPC2$lag4[102:1259]+new_GSPC2$lag5[102:1259], new_GSPC2$movement[2:101],k=x)
+  prediction5 <- knn(new_GSPC2$lag1[2:101]+new_GSPC2$lag2[2:101]+new_GSPC2$lag3[2:101]+new_GSPC2$lag4[2:101]+new_GSPC2$lag5[2:101], new_GSPC2$lag1[102:500]+new_GSPC2$lag2[102:500]+new_GSPC2$lag3[102:500]+new_GSPC2$lag4[102:500]+new_GSPC2$lag5[102:500], new_GSPC2$movement[2:101],k=x)
+  accuracy3[x] <- mean(prediction3 == movement[102:1259])
+  accuracy5[x] <- mean(prediction5 == movement[102:500])
+}
+
+prediction4 <- knn(train = new_GSPC2$lag1[2:101]+new_GSPC2$lag2[2:101]+new_GSPC2$lag3[2:101]+new_GSPC2$lag4[2:101]+new_GSPC2$lag5[2:101], new_GSPC2$lag1[102:1259]+new_GSPC2$lag2[102:1259]+new_GSPC2$lag3[102:1259]+new_GSPC2$lag4[102:1259]+new_GSPC2$lag5[102:1259], new_GSPC2$movement[2:101],k=7)
+
+accuracy4 <- mean(prediction4 == movement[102:1259])
+
+plot(k, accuracy, type = 'b')
+plot(k, accuracy2, type= 'b')
+plot(k, accuracy3, type= 'b')
+plot(k, accuracy5, type='b')
+accuracy4
+```
+
+
+
+```{r}
+library(MASS)
+GPSC_Volume1 <- coredata(GSPC$GSPC.Volume)
+lag_1 <- cbind(lag(GSPC_Volume, default =  4304880000))
+lag_2 <- cbind(lag(GSPC_Volume, 2))
+qda.fit=qda(train_lbs~lag_1+lag_2+new_GSPC$GSPC.Volume, subset=GSPC_Volume[1:100])
+```
+
+
+
+
